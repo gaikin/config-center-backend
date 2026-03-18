@@ -27,6 +27,11 @@ public final class RequestContextHolder {
         return context == null ? List.of() : context.roleIds();
     }
 
+    public static String currentUserId() {
+        RequestContext context = HOLDER.get();
+        return context == null ? "system.unknown" : context.userId();
+    }
+
     public static void clear() {
         HOLDER.remove();
     }

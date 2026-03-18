@@ -140,3 +140,92 @@ CREATE TABLE IF NOT EXISTS runtime_snapshot (
   updated_by VARCHAR(64) NOT NULL,
   is_deleted TINYINT NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS permission_resource (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  resource_code VARCHAR(128) NOT NULL,
+  resource_name VARCHAR(128) NOT NULL,
+  resource_type VARCHAR(16) NOT NULL,
+  resource_path VARCHAR(255) NOT NULL,
+  page_path VARCHAR(255),
+  status VARCHAR(32) NOT NULL,
+  order_no INT NOT NULL,
+  description VARCHAR(255),
+  created_at TIMESTAMP NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  is_deleted TINYINT NOT NULL DEFAULT 0
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_permission_resource_code ON permission_resource(resource_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_permission_resource_path ON permission_resource(resource_path);
+
+CREATE TABLE IF NOT EXISTS cc_role (
+  id BIGINT PRIMARY KEY,
+  name VARCHAR(128) NOT NULL,
+  role_type VARCHAR(32) NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  org_scope_id VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  is_deleted TINYINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS role_resource_grant (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  role_id BIGINT NOT NULL,
+  resource_code VARCHAR(128) NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  is_deleted TINYINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS user_role_binding (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(64) NOT NULL,
+  role_id BIGINT NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  is_deleted TINYINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS platform_runtime_config (
+  id BIGINT PRIMARY KEY,
+  prompt_stable_version VARCHAR(64) NOT NULL,
+  prompt_gray_default_version VARCHAR(64),
+  job_stable_version VARCHAR(64) NOT NULL,
+  job_gray_default_version VARCHAR(64),
+  created_at TIMESTAMP NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  is_deleted TINYINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS menu_sdk_policy (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  menu_code VARCHAR(64) NOT NULL,
+  menu_name VARCHAR(128) NOT NULL,
+  prompt_gray_enabled TINYINT NOT NULL,
+  prompt_gray_version VARCHAR(64),
+  prompt_gray_org_ids_json CLOB,
+  job_gray_enabled TINYINT NOT NULL,
+  job_gray_version VARCHAR(64),
+  job_gray_org_ids_json CLOB,
+  effective_start TIMESTAMP NOT NULL,
+  effective_end TIMESTAMP NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  created_by VARCHAR(64) NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  updated_by VARCHAR(64) NOT NULL,
+  is_deleted TINYINT NOT NULL DEFAULT 0
+);
