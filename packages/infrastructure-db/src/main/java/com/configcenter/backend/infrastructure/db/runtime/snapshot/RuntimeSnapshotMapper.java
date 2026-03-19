@@ -1,0 +1,13 @@
+package com.configcenter.backend.infrastructure.db.runtime.snapshot;
+
+import java.util.Map;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+@Mapper
+public interface RuntimeSnapshotMapper {
+
+    Map<String, Object> selectRuntimeBundle(@Param("pageId") Long pageId);
+}
+
+
