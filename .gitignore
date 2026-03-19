@@ -38,6 +38,7 @@ buildNumber.properties
 # OS
 .DS_Store
 Thumbs.db
+.worktrees/
 
 # Spring Boot
 *.pid
