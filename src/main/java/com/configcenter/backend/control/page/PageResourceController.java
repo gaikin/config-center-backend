@@ -2,12 +2,18 @@ package com.configcenter.backend.control.page;
 
 import com.configcenter.backend.common.api.ApiResponse;
 import com.configcenter.backend.common.api.PageResponse;
+import com.configcenter.backend.control.page.dto.PageMenuView;
+import com.configcenter.backend.control.page.dto.PageMenuUpsertRequest;
+import com.configcenter.backend.control.page.dto.PageResourceDetailView;
+import com.configcenter.backend.control.page.dto.PageResourceUpsertRequest;
+import com.configcenter.backend.control.page.dto.PageResourceVersionUpdateRequest;
+import com.configcenter.backend.control.page.dto.PageResourceVersionView;
+import com.configcenter.backend.control.page.dto.PageResourceView;
+import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,18 +29,18 @@ public class PageResourceController {
         this.pageResourceService = pageResourceService;
     }
 
-    @GetMapping("/page-sites")
-    public ApiResponse<List<Map<String, Object>>> listSites() {
-        return ApiResponse.success(pageResourceService.listSites());
-    }
-
     @GetMapping("/page-menus")
-    public ApiResponse<List<Map<String, Object>>> listMenus() {
+    public ApiResponse<List<PageMenuView>> listMenus() {
         return ApiResponse.success(pageResourceService.listMenus());
     }
 
+    @PostMapping("/page-menus")
+    public ApiResponse<PageMenuView> createMenu(@Valid @RequestBody PageMenuUpsertRequest body) {
+        return ApiResponse.success(pageResourceService.createMenu(body));
+    }
+
     @GetMapping("/page-resources")
-    public ApiResponse<PageResponse<Map<String, Object>>> listPageResources(
+    public ApiResponse<PageResponse<PageResourceView>> listPageResources(
             @RequestParam(defaultValue = "1") Long pageNo,
             @RequestParam(defaultValue = "20") Long pageSize,
             @RequestParam(required = false) String keyword,
@@ -45,26 +51,27 @@ public class PageResourceController {
     }
 
     @GetMapping("/page-resources/{pageId}")
-    public ApiResponse<Map<String, Object>> getPageResourceDetail(@PathVariable Long pageId) {
+    public ApiResponse<PageResourceDetailView> getPageResourceDetail(@PathVariable Long pageId) {
         return ApiResponse.success(pageResourceService.getPageResourceDetail(pageId));
     }
 
     @PostMapping("/page-resources")
-    public ApiResponse<Map<String, Object>> createPageResource(@RequestBody Map<String, Object> body) {
+    public ApiResponse<PageResourceView> createPageResource(@Valid @RequestBody PageResourceUpsertRequest body) {
         return ApiResponse.success(pageResourceService.createPageResource(body));
     }
 
     @PostMapping("/page-resources/{pageId}/versions")
-    public ApiResponse<Map<String, Object>> createPageResourceVersion(@PathVariable Long pageId) {
+    public ApiResponse<PageResourceVersionView> createPageResourceVersion(@PathVariable Long pageId) {
         return ApiResponse.success(pageResourceService.createPageResourceVersion(pageId));
     }
 
-    @PutMapping("/page-resources/{pageId}/versions/{versionId}")
-    public ApiResponse<Map<String, Object>> updatePageResourceVersion(
+    @PostMapping("/page-resources/{pageId}/versions/{versionId}")
+    public ApiResponse<PageResourceVersionView> updatePageResourceVersion(
             @PathVariable Long pageId,
             @PathVariable Long versionId,
-            @RequestBody Map<String, Object> body
+            @Valid @RequestBody PageResourceVersionUpdateRequest body
     ) {
         return ApiResponse.success(pageResourceService.updatePageResourceVersion(pageId, versionId, body));
     }
 }
+

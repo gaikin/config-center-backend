@@ -1,7 +1,7 @@
 package com.configcenter.backend.runtime.snapshot;
 
 import com.configcenter.backend.common.api.ApiResponse;
-import java.util.Map;
+import com.configcenter.backend.runtime.snapshot.dto.RuntimeBundleView;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ public class SnapshotController {
     }
 
     @GetMapping("/{pageId}/bundle")
-    public ApiResponse<Map<String, Object>> getBundle(@PathVariable Long pageId) {
+    public ApiResponse<RuntimeBundleView> getBundle(@PathVariable Long pageId) {
         return ApiResponse.success(snapshotService.getBundle(pageId));
     }
 }

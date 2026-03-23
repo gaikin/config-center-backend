@@ -1,7 +1,11 @@
 package com.configcenter.backend.governance;
 
 import com.configcenter.backend.common.api.ApiResponse;
-import java.util.Map;
+import com.configcenter.backend.governance.dto.GovernanceAuditLogsView;
+import com.configcenter.backend.governance.dto.GovernanceExecutionLogsView;
+import com.configcenter.backend.governance.dto.GovernanceMetricsView;
+import com.configcenter.backend.governance.dto.GovernanceTriggerLogsView;
+import com.configcenter.backend.governance.dto.PendingSummaryView;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,27 +21,27 @@ public class GovernanceController {
     }
 
     @GetMapping("/pending-summary")
-    public ApiResponse<Map<String, Object>> pendingSummary() {
+    public ApiResponse<PendingSummaryView> pendingSummary() {
         return ApiResponse.success(governanceService.pendingSummary());
     }
 
     @GetMapping("/audit-logs")
-    public ApiResponse<Map<String, Object>> auditLogs() {
+    public ApiResponse<GovernanceAuditLogsView> auditLogs() {
         return ApiResponse.success(governanceService.auditLogs());
     }
 
     @GetMapping("/trigger-logs")
-    public ApiResponse<Map<String, Object>> triggerLogs() {
+    public ApiResponse<GovernanceTriggerLogsView> triggerLogs() {
         return ApiResponse.success(governanceService.triggerLogs());
     }
 
     @GetMapping("/execution-logs")
-    public ApiResponse<Map<String, Object>> executionLogs() {
+    public ApiResponse<GovernanceExecutionLogsView> executionLogs() {
         return ApiResponse.success(governanceService.executionLogs());
     }
 
     @GetMapping("/metrics/overview")
-    public ApiResponse<Map<String, Object>> metricsOverview() {
+    public ApiResponse<GovernanceMetricsView> metricsOverview() {
         return ApiResponse.success(governanceService.metricsOverview());
     }
 }

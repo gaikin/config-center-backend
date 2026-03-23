@@ -2,11 +2,16 @@ package com.configcenter.backend.control.interfaceapi;
 
 import com.configcenter.backend.common.api.ApiResponse;
 import com.configcenter.backend.common.api.PageResponse;
-import java.util.Map;
+import com.configcenter.backend.control.interfaceapi.dto.InterfaceDefinitionDetailView;
+import com.configcenter.backend.control.interfaceapi.dto.InterfaceDefinitionUpsertRequest;
+import com.configcenter.backend.control.interfaceapi.dto.InterfaceDefinitionView;
+import com.configcenter.backend.control.interfaceapi.dto.InterfaceStatusUpdateRequest;
+import com.configcenter.backend.control.interfaceapi.dto.InterfaceVersionUpdateRequest;
+import com.configcenter.backend.control.interfaceapi.dto.InterfaceVersionView;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,7 +28,7 @@ public class InterfaceRegistryController {
     }
 
     @GetMapping
-    public ApiResponse<PageResponse<Map<String, Object>>> listInterfaces(
+    public ApiResponse<PageResponse<InterfaceDefinitionView>> listInterfaces(
             @RequestParam(defaultValue = "1") Long pageNo,
             @RequestParam(defaultValue = "20") Long pageSize,
             @RequestParam(required = false) String keyword,
@@ -34,26 +39,35 @@ public class InterfaceRegistryController {
     }
 
     @GetMapping("/{interfaceId}")
-    public ApiResponse<Map<String, Object>> getInterfaceDetail(@PathVariable Long interfaceId) {
+    public ApiResponse<InterfaceDefinitionDetailView> getInterfaceDetail(@PathVariable Long interfaceId) {
         return ApiResponse.success(interfaceRegistryService.getInterfaceDetail(interfaceId));
     }
 
     @PostMapping
-    public ApiResponse<Map<String, Object>> createInterface(@RequestBody Map<String, Object> body) {
-        return ApiResponse.success(interfaceRegistryService.createInterface(body));
+    public ApiResponse<InterfaceDefinitionView> saveInterfaceDraft(@RequestBody @Valid InterfaceDefinitionUpsertRequest body) {
+        return ApiResponse.success(interfaceRegistryService.saveInterfaceDraft(body));
     }
 
     @PostMapping("/{interfaceId}/versions")
-    public ApiResponse<Map<String, Object>> createVersion(@PathVariable Long interfaceId) {
-        return ApiResponse.success(interfaceRegistryService.createVersion(interfaceId));
+    public ApiResponse<InterfaceVersionView> createVersion(@PathVariable Long interfaceId) {
+        return ApiResponse.success(interfaceRegistryService.createInterfaceVersion(interfaceId));
     }
 
-    @PutMapping("/{interfaceId}/versions/{versionId}")
-    public ApiResponse<Map<String, Object>> updateVersion(
+    @PostMapping("/{interfaceId}/versions/{versionId}")
+    public ApiResponse<InterfaceVersionView> updateVersion(
             @PathVariable Long interfaceId,
             @PathVariable Long versionId,
-            @RequestBody Map<String, Object> body
+            @RequestBody @Valid InterfaceVersionUpdateRequest body
     ) {
-        return ApiResponse.success(interfaceRegistryService.updateVersion(interfaceId, versionId, body));
+        return ApiResponse.success(interfaceRegistryService.updateInterfaceVersion(interfaceId, versionId, body));
+    }
+
+    @PostMapping("/{interfaceId}/status")
+    public ApiResponse<InterfaceDefinitionView> updateStatus(
+            @PathVariable Long interfaceId,
+            @RequestBody @Valid InterfaceStatusUpdateRequest body
+    ) {
+        return ApiResponse.success(interfaceRegistryService.updateInterfaceStatus(interfaceId, body));
     }
 }
+

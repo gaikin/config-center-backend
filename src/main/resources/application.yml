@@ -3,11 +3,14 @@ server:
 
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:h2}
+    active: ${SPRING_PROFILES_ACTIVE:mysql}
   application:
     name: config-center-backend
   jackson:
     time-zone: Asia/Shanghai
+  sql:
+    init:
+      encoding: UTF-8
 
 mybatis-plus:
   type-aliases-package: com.configcenter.backend
@@ -22,3 +25,14 @@ mybatis-plus:
 logging:
   level:
     com.configcenter.backend: INFO
+
+auth:
+  id-token:
+    issuer: ${ID_TOKEN_ISSUER:config-center-backend}
+    secret: ${ID_TOKEN_SECRET:config-center-id-token-secret}
+    expire-seconds: ${ID_TOKEN_EXPIRE_SECONDS:7200}
+    enforce: ${ID_TOKEN_ENFORCE:true}
+
+runtime:
+  cors:
+    allowed-origin-patterns: ${RUNTIME_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}

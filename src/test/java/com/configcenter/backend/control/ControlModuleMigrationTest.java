@@ -2,6 +2,7 @@ package com.configcenter.backend.control;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.configcenter.backend.bootstrap.ConfigCenterApiServerApplication;
@@ -22,8 +23,14 @@ class ControlModuleMigrationTest {
 
     @Test
     void controlEndpointsShouldStayAvailableAfterMigration() throws Exception {
-        mockMvc.perform(get("/api/control/page-sites"))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/control/page-menus"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.body[0].regionId").exists());
+        mockMvc.perform(get("/api/control/page-resources"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.body.records[0].menuCode").exists())
+                .andExpect(jsonPath("$.body.records[0].menuId").doesNotExist())
+                .andExpect(jsonPath("$.body.records[0].currentVersion").exists());
         mockMvc.perform(get("/api/control/interfaces"))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/control/rules"))

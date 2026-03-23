@@ -1,18 +1,9 @@
 package com.configcenter.backend.infrastructure.db.control.page;
 
-import java.util.List;
-import java.util.Map;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.configcenter.backend.infrastructure.db.control.page.model.PageResourceDO;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface PageResourceMapper {
-
-    List<Map<String, Object>> selectPageResources(
-            @Param("keyword") String keyword,
-            @Param("status") String status,
-            @Param("ownerOrgId") String ownerOrgId
-    );
-
-    Map<String, Object> selectPageResourceById(@Param("pageId") Long pageId);
+public interface PageResourceMapper extends BaseMapper<PageResourceDO> {
 }

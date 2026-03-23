@@ -1,21 +1,22 @@
 package com.configcenter.backend.runtime.context;
 
-import com.configcenter.backend.common.support.DemoDataFactory;
-import com.configcenter.backend.infrastructure.db.runtime.context.PageContextMapper;
-import java.util.Map;
+import com.configcenter.backend.runtime.context.dto.PageContextResolveRequest;
+import com.configcenter.backend.runtime.context.dto.PageContextView;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PageContextService {
 
-    private final PageContextMapper pageContextMapper;
-
-    public PageContextService(PageContextMapper pageContextMapper) {
-        this.pageContextMapper = pageContextMapper;
-    }
-
-    public Map<String, Object> resolve(Map<String, Object> body) {
-        return DemoDataFactory.resolvedPageContext(body);
+    public PageContextView resolve(PageContextResolveRequest body) {
+        PageContextView view = new PageContextView();
+        view.setPageId(100L);
+        view.setPageVersionId(1000L);
+        view.setMatchedBy(body.getMenuCode() != null && !body.getMenuCode().isBlank() ? "MENU" : "URL");
+        view.setBundleVersion("1000-demo");
+        view.setRegionId(body.getRegionId());
+        view.setMenuCode(body.getMenuCode());
+        view.setUrl(body.getUrl());
+        return view;
     }
 }
 

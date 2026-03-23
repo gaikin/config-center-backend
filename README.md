@@ -7,8 +7,8 @@ Spring Boot + MyBatis-Plus backend for the config center project.
 - Java 17
 - Spring Boot
 - MyBatis-Plus
-- H2 (default local simulation)
-- MySQL
+- MySQL (default production mode)
+- H2 (local simulation)
 - Maven
 
 ## Scripts
@@ -21,8 +21,8 @@ Spring Boot + MyBatis-Plus backend for the config center project.
 
 ## Profiles
 
-- Default profile: `h2`
-- Switch to MySQL: `SPRING_PROFILES_ACTIVE=mysql`
+- Default profile: `mysql`
+- Switch to H2: `SPRING_PROFILES_ACTIVE=h2`
 
 ## H2 Console
 
@@ -42,4 +42,4 @@ Spring Boot + MyBatis-Plus backend for the config center project.
 
 - Runtime entrypoint is `com.configcenter.backend.bootstrap.ConfigCenterApiServerApplication`.
 - Project follows Maven standard source layout.
-- Local startup works out of the box with in-memory H2 and `/healthz`.
+- Local startup uses MySQL by default; switch to H2 with `SPRING_PROFILES_ACTIVE=h2` for in-memory local boot and `/healthz`.

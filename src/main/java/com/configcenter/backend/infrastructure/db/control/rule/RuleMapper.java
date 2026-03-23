@@ -1,18 +1,9 @@
 package com.configcenter.backend.infrastructure.db.control.rule;
 
-import java.util.List;
-import java.util.Map;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.configcenter.backend.infrastructure.db.control.rule.model.RuleDefinitionDO;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface RuleMapper {
-
-    List<Map<String, Object>> selectRules(
-            @Param("keyword") String keyword,
-            @Param("status") String status,
-            @Param("ownerOrgId") String ownerOrgId
-    );
-
-    Map<String, Object> selectRuleById(@Param("ruleId") Long ruleId);
+public interface RuleMapper extends BaseMapper<RuleDefinitionDO> {
 }

@@ -1,18 +1,9 @@
 package com.configcenter.backend.infrastructure.db.control.interfaceapi;
 
-import java.util.List;
-import java.util.Map;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.configcenter.backend.infrastructure.db.control.interfaceapi.model.InterfaceDefinitionDO;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface InterfaceRegistryMapper {
-
-    List<Map<String, Object>> selectInterfaceDefinitions(
-            @Param("keyword") String keyword,
-            @Param("status") String status,
-            @Param("ownerOrgId") String ownerOrgId
-    );
-
-    Map<String, Object> selectInterfaceDefinitionById(@Param("interfaceId") Long interfaceId);
+public interface InterfaceRegistryMapper extends BaseMapper<InterfaceDefinitionDO> {
 }

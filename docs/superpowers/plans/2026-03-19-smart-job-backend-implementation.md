@@ -8,6 +8,11 @@
 
 **Tech Stack:** Java 17, Spring Boot 3, Spring MVC, Spring Validation, MyBatis Plus, H2/MySQL, JUnit 5, MockMvc
 
+## TODO (2026-03-23)
+
+- [ ] Decommission `job_node_run_log` from this phase. Keep only scene-level execution records and prompt trigger logs in runtime APIs.
+- [ ] Re-evaluate node-level run-log capability in a later phase after confirming product-side troubleshooting requirements and retention policy.
+
 ---
 
 ## Scope Check

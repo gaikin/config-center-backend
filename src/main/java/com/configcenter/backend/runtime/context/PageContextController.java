@@ -1,7 +1,8 @@
 package com.configcenter.backend.runtime.context;
 
 import com.configcenter.backend.common.api.ApiResponse;
-import java.util.Map;
+import com.configcenter.backend.runtime.context.dto.PageContextResolveRequest;
+import com.configcenter.backend.runtime.context.dto.PageContextView;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +19,7 @@ public class PageContextController {
     }
 
     @PostMapping("/resolve")
-    public ApiResponse<Map<String, Object>> resolve(@RequestBody Map<String, Object> body) {
+    public ApiResponse<PageContextView> resolve(@RequestBody PageContextResolveRequest body) {
         return ApiResponse.success(pageContextService.resolve(body));
     }
 }

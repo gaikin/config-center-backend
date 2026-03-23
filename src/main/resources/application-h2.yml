@@ -11,9 +11,14 @@ spring:
   sql:
     init:
       mode: always
+      encoding: UTF-8
       schema-locations: classpath:schema-h2.sql
       data-locations: classpath:data-h2.sql
 
 logging:
   level:
     org.springframework.jdbc.datasource.init: INFO
+
+auth:
+  id-token:
+    enforce: false

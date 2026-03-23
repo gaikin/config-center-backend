@@ -1,16 +1,13 @@
 package com.configcenter.backend.governance;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.configcenter.backend.governance.dto.MenuSdkPolicyUpsertRequest;
+import com.configcenter.backend.governance.dto.MenuSdkPolicyView;
 import com.configcenter.backend.infrastructure.db.governance.mapper.MenuSdkPolicyMapper;
-import com.configcenter.backend.infrastructure.db.governance.mapper.PlatformRuntimeConfigMapper;
 import com.configcenter.backend.infrastructure.db.governance.model.MenuSdkPolicyDO;
-import com.configcenter.backend.infrastructure.db.governance.model.PlatformRuntimeConfigDO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -19,70 +16,33 @@ public class GovernanceApplicationService {
 
     private static final TypeReference<List<String>> STRING_LIST_TYPE = new TypeReference<>() {};
 
-    private final PlatformRuntimeConfigMapper platformRuntimeConfigMapper;
     private final MenuSdkPolicyMapper menuSdkPolicyMapper;
     private final ObjectMapper objectMapper;
 
     public GovernanceApplicationService(
-            PlatformRuntimeConfigMapper platformRuntimeConfigMapper,
             MenuSdkPolicyMapper menuSdkPolicyMapper,
             ObjectMapper objectMapper
     ) {
-        this.platformRuntimeConfigMapper = platformRuntimeConfigMapper;
         this.menuSdkPolicyMapper = menuSdkPolicyMapper;
         this.objectMapper = objectMapper;
     }
 
-    public Map<String, Object> getPlatformRuntimeConfig() {
-        PlatformRuntimeConfigDO config = platformRuntimeConfigMapper.selectById(1L);
-        if (config == null) {
-            PlatformRuntimeConfigDO fallback = new PlatformRuntimeConfigDO();
-            fallback.setId(1L);
-            fallback.setPromptStableVersion("");
-            fallback.setJobStableVersion("");
-            return toPlatformMap(fallback);
-        }
-        return toPlatformMap(config);
-    }
-
-    public Map<String, Object> upsertPlatformRuntimeConfig(Map<String, Object> payload) {
-        PlatformRuntimeConfigDO config = platformRuntimeConfigMapper.selectById(1L);
-        if (config == null) {
-            config = new PlatformRuntimeConfigDO();
-            config.setId(1L);
-        }
-
-        config.setPromptStableVersion(readText(payload, "promptStableVersion"));
-        config.setPromptGrayDefaultVersion(readText(payload, "promptGrayDefaultVersion"));
-        config.setJobStableVersion(readText(payload, "jobStableVersion"));
-        config.setJobGrayDefaultVersion(readText(payload, "jobGrayDefaultVersion"));
-
-        if (platformRuntimeConfigMapper.selectById(1L) == null) {
-            platformRuntimeConfigMapper.insert(config);
-        } else {
-            platformRuntimeConfigMapper.updateById(config);
-        }
-
-        return toPlatformMap(platformRuntimeConfigMapper.selectById(1L));
-    }
-
-    public List<Map<String, Object>> listMenuSdkPolicies() {
+    public List<MenuSdkPolicyView> listMenuSdkPolicies() {
         return menuSdkPolicyMapper.selectList(new LambdaQueryWrapper<MenuSdkPolicyDO>()
-                        .eq(MenuSdkPolicyDO::getIsDeleted, 0)
                         .orderByDesc(MenuSdkPolicyDO::getId))
                 .stream()
-                .map(this::toPolicyMap)
+                .map(this::toPolicyView)
                 .toList();
     }
 
-    public Map<String, Object> createMenuSdkPolicy(Map<String, Object> payload) {
+    public MenuSdkPolicyView createMenuSdkPolicy(MenuSdkPolicyUpsertRequest payload) {
         MenuSdkPolicyDO policy = new MenuSdkPolicyDO();
         applyPolicyPayload(policy, payload);
         menuSdkPolicyMapper.insert(policy);
-        return toPolicyMap(menuSdkPolicyMapper.selectById(policy.getId()));
+        return toPolicyView(menuSdkPolicyMapper.selectById(policy.getId()));
     }
 
-    public Map<String, Object> updateMenuSdkPolicy(Long id, Map<String, Object> payload) {
+    public MenuSdkPolicyView updateMenuSdkPolicy(Long id, MenuSdkPolicyUpsertRequest payload) {
         MenuSdkPolicyDO policy = menuSdkPolicyMapper.selectById(id);
         if (policy == null) {
             policy = new MenuSdkPolicyDO();
@@ -94,73 +54,39 @@ public class GovernanceApplicationService {
         } else {
             menuSdkPolicyMapper.updateById(policy);
         }
-        return toPolicyMap(menuSdkPolicyMapper.selectById(policy.getId()));
+        return toPolicyView(menuSdkPolicyMapper.selectById(policy.getId()));
     }
 
-    private void applyPolicyPayload(MenuSdkPolicyDO policy, Map<String, Object> payload) {
-        policy.setMenuCode(readText(payload, "menuCode"));
-        policy.setMenuName(readText(payload, "menuName"));
-        policy.setPromptGrayEnabled(readBoolean(payload, "promptGrayEnabled"));
-        policy.setPromptGrayVersion(readText(payload, "promptGrayVersion"));
-        policy.setPromptGrayOrgIdsJson(writeJson(readStringList(payload, "promptGrayOrgIds")));
-        policy.setJobGrayEnabled(readBoolean(payload, "jobGrayEnabled"));
-        policy.setJobGrayVersion(readText(payload, "jobGrayVersion"));
-        policy.setJobGrayOrgIdsJson(writeJson(readStringList(payload, "jobGrayOrgIds")));
-        policy.setEffectiveStart(readDateTime(payload, "effectiveStart"));
-        policy.setEffectiveEnd(readDateTime(payload, "effectiveEnd"));
-        policy.setStatus(defaultText(readText(payload, "status"), "ACTIVE"));
+    private void applyPolicyPayload(MenuSdkPolicyDO policy, MenuSdkPolicyUpsertRequest payload) {
+        policy.setMenuCode(payload.menuCode());
+        policy.setMenuName(payload.menuName());
+        policy.setPromptGrayEnabled(payload.promptGrayEnabled());
+        policy.setPromptGrayVersion(payload.promptGrayVersion());
+        policy.setPromptGrayOrgIdsJson(writeJson(payload.promptGrayOrgIds()));
+        policy.setJobGrayEnabled(payload.jobGrayEnabled());
+        policy.setJobGrayVersion(payload.jobGrayVersion());
+        policy.setJobGrayOrgIdsJson(writeJson(payload.jobGrayOrgIds()));
+        policy.setEffectiveStart(payload.effectiveStart());
+        policy.setEffectiveEnd(payload.effectiveEnd());
+        policy.setStatus(defaultText(payload.status(), "ACTIVE"));
     }
 
-    private Map<String, Object> toPlatformMap(PlatformRuntimeConfigDO item) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("promptStableVersion", item.getPromptStableVersion());
-        row.put("promptGrayDefaultVersion", item.getPromptGrayDefaultVersion());
-        row.put("jobStableVersion", item.getJobStableVersion());
-        row.put("jobGrayDefaultVersion", item.getJobGrayDefaultVersion());
-        row.put("updatedAt", item.getUpdatedAt());
-        return row;
-    }
-
-    private Map<String, Object> toPolicyMap(MenuSdkPolicyDO item) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("id", item.getId());
-        row.put("menuCode", item.getMenuCode());
-        row.put("menuName", item.getMenuName());
-        row.put("promptGrayEnabled", Boolean.TRUE.equals(item.getPromptGrayEnabled()));
-        row.put("promptGrayVersion", item.getPromptGrayVersion());
-        row.put("promptGrayOrgIds", parseJsonList(item.getPromptGrayOrgIdsJson()));
-        row.put("jobGrayEnabled", Boolean.TRUE.equals(item.getJobGrayEnabled()));
-        row.put("jobGrayVersion", item.getJobGrayVersion());
-        row.put("jobGrayOrgIds", parseJsonList(item.getJobGrayOrgIdsJson()));
-        row.put("effectiveStart", item.getEffectiveStart());
-        row.put("effectiveEnd", item.getEffectiveEnd());
-        row.put("status", item.getStatus());
-        row.put("updatedAt", item.getUpdatedAt());
-        return row;
-    }
-
-    private String readText(Map<String, Object> payload, String key) {
-        Object value = payload.get(key);
-        return value == null ? null : String.valueOf(value);
-    }
-
-    private boolean readBoolean(Map<String, Object> payload, String key) {
-        Object value = payload.get(key);
-        if (value instanceof Boolean bool) {
-            return bool;
-        }
-        if (value instanceof Number number) {
-            return number.intValue() != 0;
-        }
-        return Boolean.parseBoolean(String.valueOf(value));
-    }
-
-    private LocalDateTime readDateTime(Map<String, Object> payload, String key) {
-        String raw = readText(payload, key);
-        if (!StringUtils.hasText(raw)) {
-            return LocalDateTime.now();
-        }
-        return LocalDateTime.parse(raw);
+    private MenuSdkPolicyView toPolicyView(MenuSdkPolicyDO item) {
+        return new MenuSdkPolicyView(
+                item.getId(),
+                item.getMenuCode(),
+                item.getMenuName(),
+                Boolean.TRUE.equals(item.getPromptGrayEnabled()),
+                item.getPromptGrayVersion(),
+                parseJsonList(item.getPromptGrayOrgIdsJson()),
+                Boolean.TRUE.equals(item.getJobGrayEnabled()),
+                item.getJobGrayVersion(),
+                parseJsonList(item.getJobGrayOrgIdsJson()),
+                item.getEffectiveStart(),
+                item.getEffectiveEnd(),
+                item.getStatus(),
+                item.getUpdateTime()
+        );
     }
 
     private String writeJson(List<String> values) {
@@ -180,14 +106,6 @@ public class GovernanceApplicationService {
         } catch (Exception ex) {
             return List.of();
         }
-    }
-
-    private List<String> readStringList(Map<String, Object> payload, String key) {
-        Object value = payload.get(key);
-        if (value instanceof List<?> list) {
-            return list.stream().map(String::valueOf).toList();
-        }
-        return List.of();
     }
 
     private String defaultText(String value, String defaultValue) {

@@ -2,7 +2,6 @@ package com.configcenter.backend.permission;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,7 +36,7 @@ class PermissionGovernanceApiTest {
 
     @Test
     void shouldReplaceRoleResourceGrants() throws Exception {
-        mockMvc.perform(put("/api/permissions/roles/7003/resource-grants")
+        mockMvc.perform(post("/api/permissions/roles/7003/resource-grants")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"resourceCodes\":[\"menu_dashboard\",\"page_dashboard_list\"]}"))
                 .andExpect(status().isOk())
@@ -56,24 +55,32 @@ class PermissionGovernanceApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.body.id").value(7004));
 
-        mockMvc.perform(put("/api/permissions/roles/7004")
+        mockMvc.perform(post("/api/permissions/roles/7004")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"测试角色-更新\",\"roleType\":\"CONFIG_OPERATOR\",\"status\":\"ACTIVE\",\"orgScopeId\":\"org.demo\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.body.name").value("测试角色-更新"));
+
+        mockMvc.perform(post("/api/permissions/roles/7004/clone"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.body.name").value("测试角色-更新-copy"));
+
+        mockMvc.perform(post("/api/permissions/roles/7004/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.body.status").value("DISABLED"));
     }
 
     @Test
     void shouldUpdatePlatformRuntimeConfig() throws Exception {
-        mockMvc.perform(put("/api/governance/platform-runtime-config")
+        mockMvc.perform(post("/api/governance/general-config-items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"promptStableVersion\":\"1.5.0\",\"promptGrayDefaultVersion\":\"1.5.1-rc1\",\"jobStableVersion\":\"2.3.0\",\"jobGrayDefaultVersion\":\"2.3.1-rc1\"}"))
+                        .content("{\"groupKey\":\"platform-runtime\",\"itemKey\":\"promptStableVersion\",\"itemValue\":\"1.5.0\",\"description\":\"智能提示正式版本\",\"status\":\"ACTIVE\",\"orderNo\":1}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.body.promptStableVersion").value("1.5.0"));
+                .andExpect(jsonPath("$.body.itemValue").value("1.5.0"));
 
-        mockMvc.perform(get("/api/governance/platform-runtime-config"))
+        mockMvc.perform(get("/api/governance/general-config-items?groupKey=platform-runtime"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.body.jobStableVersion").value("2.3.0"));
+                .andExpect(jsonPath("$.body[0].groupKey").value("platform-runtime"));
     }
 
     @Test

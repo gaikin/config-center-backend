@@ -11,11 +11,18 @@ import com.configcenter.backend.infrastructure.db.permission.model.PermissionRes
 import com.configcenter.backend.infrastructure.db.permission.model.RoleDO;
 import com.configcenter.backend.infrastructure.db.permission.model.RoleResourceGrantDO;
 import com.configcenter.backend.infrastructure.db.permission.model.UserRoleBindingDO;
+import com.configcenter.backend.permission.dto.PermissionResourceUpsertRequest;
+import com.configcenter.backend.permission.dto.PermissionResourceView;
+import com.configcenter.backend.permission.dto.RoleResourceGrantView;
+import com.configcenter.backend.permission.dto.RoleUpdateCountView;
+import com.configcenter.backend.permission.dto.RoleUpsertRequest;
+import com.configcenter.backend.permission.dto.RoleView;
+import com.configcenter.backend.permission.dto.SessionMeView;
+import com.configcenter.backend.permission.dto.UserRoleBindingView;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
@@ -41,33 +48,31 @@ public class PermissionApplicationService {
         this.userRoleBindingMapper = userRoleBindingMapper;
     }
 
-    public List<Map<String, Object>> listResources() {
+    public List<PermissionResourceView> listResources() {
         return permissionResourceMapper.selectList(new LambdaQueryWrapper<PermissionResourceDO>()
-                        .eq(PermissionResourceDO::getIsDeleted, 0)
                         .orderByAsc(PermissionResourceDO::getOrderNo, PermissionResourceDO::getId))
                 .stream()
-                .map(this::toResourceMap)
+                .map(this::toResourceView)
                 .toList();
     }
 
-    public Map<String, Object> upsertResource(Long id, Map<String, Object> payload) {
+    public PermissionResourceView upsertResource(Long id, PermissionResourceUpsertRequest payload) {
         PermissionResourceDO target = id == null
                 ? new PermissionResourceDO()
                 : permissionResourceMapper.selectById(id);
-
         if (target == null) {
             target = new PermissionResourceDO();
             target.setId(id);
         }
 
-        target.setResourceCode(asText(payload.get("resourceCode")));
-        target.setResourceName(asText(payload.get("resourceName")));
-        target.setResourceType(asText(payload.get("resourceType")));
-        target.setResourcePath(asText(payload.get("resourcePath")));
-        target.setPagePath(asText(payload.get("pagePath")));
-        target.setStatus(defaultText(asText(payload.get("status")), "ACTIVE"));
-        target.setOrderNo(asInt(payload.get("orderNo"), 0));
-        target.setDescription(asText(payload.get("description")));
+        target.setResourceCode(payload.resourceCode());
+        target.setResourceName(payload.resourceName());
+        target.setResourceType(payload.resourceType());
+        target.setResourcePath(payload.resourcePath());
+        target.setPagePath(payload.pagePath());
+        target.setStatus(defaultText(payload.status(), "ACTIVE"));
+        target.setOrderNo(payload.orderNo() == null ? 0 : payload.orderNo());
+        target.setDescription(payload.description());
 
         if (target.getId() == null) {
             permissionResourceMapper.insert(target);
@@ -75,19 +80,18 @@ public class PermissionApplicationService {
             permissionResourceMapper.updateById(target);
         }
 
-        return toResourceMap(permissionResourceMapper.selectById(target.getId()));
+        return toResourceView(permissionResourceMapper.selectById(target.getId()));
     }
 
-    public List<Map<String, Object>> listRoles() {
+    public List<RoleView> listRoles() {
         return roleMapper.selectList(new LambdaQueryWrapper<RoleDO>()
-                        .eq(RoleDO::getIsDeleted, 0)
                         .orderByAsc(RoleDO::getId))
                 .stream()
-                .map(this::toRoleMap)
+                .map(this::toRoleView)
                 .toList();
     }
 
-    public Map<String, Object> upsertRole(Long id, Map<String, Object> payload) {
+    public RoleView upsertRole(Long id, RoleUpsertRequest payload) {
         RoleDO role = id == null ? new RoleDO() : roleMapper.selectById(id);
         if (role == null) {
             role = new RoleDO();
@@ -96,30 +100,71 @@ public class PermissionApplicationService {
         if (role.getId() == null) {
             role.setId(nextRoleId());
         }
-        role.setName(asText(payload.get("name")));
-        role.setRoleType(defaultText(asText(payload.get("roleType")), "CONFIG_OPERATOR"));
-        role.setStatus(defaultText(asText(payload.get("status")), "ACTIVE"));
-        role.setOrgScopeId(defaultText(asText(payload.get("orgScopeId")), "org.demo"));
+        role.setName(payload.name());
+        role.setRoleType(defaultText(payload.roleType(), "CONFIG_OPERATOR"));
+        role.setStatus(defaultText(payload.status(), "ACTIVE"));
+        role.setOrgScopeId(defaultText(payload.orgScopeId(), "org.demo"));
 
         if (roleMapper.selectById(role.getId()) == null) {
             roleMapper.insert(role);
         } else {
             roleMapper.updateById(role);
         }
-        return toRoleMap(roleMapper.selectById(role.getId()));
+        return toRoleView(roleMapper.selectById(role.getId()));
     }
 
-    public List<Map<String, Object>> listRoleResourceGrants(Long roleId) {
+    public RoleView cloneRole(Long roleId) {
+        RoleDO source = requireRole(roleId);
+        RoleDO cloned = new RoleDO();
+        cloned.setId(nextRoleId());
+        cloned.setName(source.getName() + "-copy");
+        cloned.setRoleType(source.getRoleType());
+        cloned.setStatus(source.getStatus());
+        cloned.setOrgScopeId(source.getOrgScopeId());
+        roleMapper.insert(cloned);
+
+        List<RoleResourceGrantDO> sourceGrants = roleResourceGrantMapper.selectList(new LambdaQueryWrapper<RoleResourceGrantDO>()
+                .eq(RoleResourceGrantDO::getRoleId, source.getId())
+                .orderByAsc(RoleResourceGrantDO::getId));
+        for (RoleResourceGrantDO grant : sourceGrants) {
+            RoleResourceGrantDO nextGrant = new RoleResourceGrantDO();
+            nextGrant.setRoleId(cloned.getId());
+            nextGrant.setResourceCode(grant.getResourceCode());
+            roleResourceGrantMapper.insert(nextGrant);
+        }
+
+        List<UserRoleBindingDO> sourceBindings = userRoleBindingMapper.selectList(new LambdaQueryWrapper<UserRoleBindingDO>()
+                .eq(UserRoleBindingDO::getRoleId, source.getId())
+                .orderByAsc(UserRoleBindingDO::getId));
+        for (UserRoleBindingDO binding : sourceBindings) {
+            UserRoleBindingDO nextBinding = new UserRoleBindingDO();
+            nextBinding.setRoleId(cloned.getId());
+            nextBinding.setUserId(binding.getUserId());
+            nextBinding.setStatus(binding.getStatus());
+            userRoleBindingMapper.insert(nextBinding);
+        }
+
+        return toRoleView(roleMapper.selectById(cloned.getId()));
+    }
+
+    public RoleView toggleRoleStatus(Long roleId) {
+        RoleDO role = requireRole(roleId);
+        role.setStatus("ACTIVE".equals(role.getStatus()) ? "DISABLED" : "ACTIVE");
+        roleMapper.updateById(role);
+        return toRoleView(roleMapper.selectById(roleId));
+    }
+
+    public List<RoleResourceGrantView> listRoleResourceGrants(Long roleId) {
         return roleResourceGrantMapper.selectList(new LambdaQueryWrapper<RoleResourceGrantDO>()
-                        .eq(RoleResourceGrantDO::getIsDeleted, 0)
                         .eq(RoleResourceGrantDO::getRoleId, roleId)
                         .orderByAsc(RoleResourceGrantDO::getId))
                 .stream()
-                .map(this::toGrantMap)
+                .map(this::toGrantView)
                 .toList();
     }
 
-    public Map<String, Object> replaceRoleResourceGrants(Long roleId, List<String> resourceCodes) {
+    public RoleUpdateCountView replaceRoleResourceGrants(Long roleId, List<String> resourceCodes) {
+        RoleDO role = requireRole(roleId);
         roleResourceGrantMapper.delete(new LambdaUpdateWrapper<RoleResourceGrantDO>()
                 .eq(RoleResourceGrantDO::getRoleId, roleId));
 
@@ -131,23 +176,20 @@ public class PermissionApplicationService {
             roleResourceGrantMapper.insert(grantDO);
         }
 
-        return Map.of(
-                "roleId", roleId,
-                "updatedCount", uniqueCodes.size()
-        );
+        return new RoleUpdateCountView(roleId, uniqueCodes.size());
     }
 
-    public List<Map<String, Object>> listRoleMembers(Long roleId) {
+    public List<UserRoleBindingView> listRoleMembers(Long roleId) {
         return userRoleBindingMapper.selectList(new LambdaQueryWrapper<UserRoleBindingDO>()
-                        .eq(UserRoleBindingDO::getIsDeleted, 0)
                         .eq(UserRoleBindingDO::getRoleId, roleId)
                         .orderByAsc(UserRoleBindingDO::getId))
                 .stream()
-                .map(this::toBindingMap)
+                .map(this::toBindingView)
                 .toList();
     }
 
-    public Map<String, Object> replaceRoleMembers(Long roleId, List<String> userIds) {
+    public RoleUpdateCountView replaceRoleMembers(Long roleId, List<String> userIds) {
+        requireRole(roleId);
         userRoleBindingMapper.delete(new LambdaUpdateWrapper<UserRoleBindingDO>()
                 .eq(UserRoleBindingDO::getRoleId, roleId));
 
@@ -160,15 +202,11 @@ public class PermissionApplicationService {
             userRoleBindingMapper.insert(binding);
         }
 
-        return Map.of(
-                "roleId", roleId,
-                "updatedCount", uniqueUsers.size()
-        );
+        return new RoleUpdateCountView(roleId, uniqueUsers.size());
     }
 
-    public Map<String, Object> sessionMe(String userId, String orgId) {
+    public SessionMeView sessionMe(String userId, String orgId) {
         List<UserRoleBindingDO> bindings = userRoleBindingMapper.selectList(new LambdaQueryWrapper<UserRoleBindingDO>()
-                .eq(UserRoleBindingDO::getIsDeleted, 0)
                 .eq(UserRoleBindingDO::getStatus, "ACTIVE")
                 .eq(UserRoleBindingDO::getUserId, userId));
 
@@ -176,14 +214,12 @@ public class PermissionApplicationService {
         List<RoleDO> roles = roleIds.isEmpty()
                 ? List.of()
                 : roleMapper.selectList(new LambdaQueryWrapper<RoleDO>()
-                .eq(RoleDO::getIsDeleted, 0)
                 .eq(RoleDO::getStatus, "ACTIVE")
                 .in(RoleDO::getId, roleIds));
 
         List<RoleResourceGrantDO> grants = roleIds.isEmpty()
                 ? List.of()
                 : roleResourceGrantMapper.selectList(new LambdaQueryWrapper<RoleResourceGrantDO>()
-                .eq(RoleResourceGrantDO::getIsDeleted, 0)
                 .in(RoleResourceGrantDO::getRoleId, roleIds));
 
         Set<String> resourceCodes = grants.stream()
@@ -193,21 +229,20 @@ public class PermissionApplicationService {
         List<PermissionResourceDO> resources = resourceCodes.isEmpty()
                 ? List.of()
                 : permissionResourceMapper.selectList(new LambdaQueryWrapper<PermissionResourceDO>()
-                .eq(PermissionResourceDO::getIsDeleted, 0)
                 .eq(PermissionResourceDO::getStatus, "ACTIVE")
                 .in(PermissionResourceDO::getResourceCode, resourceCodes));
 
         List<String> resourcePaths = resources.stream()
                 .map(PermissionResourceDO::getResourcePath)
                 .filter(StringUtils::hasText)
-                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+                .toList();
 
-        return Map.of(
-                "userId", userId,
-                "orgId", orgId,
-                "roles", roles.stream().map(this::toRoleMap).toList(),
-                "resourceCodes", List.copyOf(resourceCodes),
-                "resourcePaths", resourcePaths
+        return new SessionMeView(
+                userId,
+                orgId,
+                roles.stream().map(this::toRoleView).toList(),
+                List.copyOf(resourceCodes),
+                resourcePaths
         );
     }
 
@@ -215,71 +250,72 @@ public class PermissionApplicationService {
         return RequestContextHolder.currentUserId();
     }
 
-    private Map<String, Object> toResourceMap(PermissionResourceDO item) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("id", item.getId());
-        row.put("resourceCode", item.getResourceCode());
-        row.put("resourceName", item.getResourceName());
-        row.put("resourceType", item.getResourceType());
-        row.put("resourcePath", item.getResourcePath());
-        row.put("pagePath", item.getPagePath());
-        row.put("status", item.getStatus());
-        row.put("orderNo", item.getOrderNo());
-        row.put("description", item.getDescription());
-        row.put("updatedAt", item.getUpdatedAt());
-        return row;
+    private RoleDO requireRole(Long roleId) {
+        RoleDO role = roleMapper.selectById(roleId);
+        if (role == null) {
+            throw new IllegalArgumentException("角色不存在，无法保存授权。");
+        }
+        return role;
     }
 
-    private Map<String, Object> toRoleMap(RoleDO roleDO) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("id", roleDO.getId());
-        row.put("name", roleDO.getName());
-        row.put("roleType", roleDO.getRoleType());
-        row.put("status", roleDO.getStatus());
-        row.put("orgScopeId", roleDO.getOrgScopeId());
-        row.put("updatedAt", roleDO.getUpdatedAt());
-        return row;
+    private PermissionResourceView toResourceView(PermissionResourceDO item) {
+        return new PermissionResourceView(
+                item.getId(),
+                item.getResourceCode(),
+                item.getResourceName(),
+                item.getResourceType(),
+                item.getResourcePath(),
+                item.getPagePath(),
+                item.getStatus(),
+                item.getOrderNo(),
+                item.getDescription(),
+                item.getUpdateTime()
+        );
     }
 
-    private Map<String, Object> toGrantMap(RoleResourceGrantDO grantDO) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("id", grantDO.getId());
-        row.put("roleId", grantDO.getRoleId());
-        row.put("resourceCode", grantDO.getResourceCode());
-        row.put("createdAt", grantDO.getCreatedAt());
-        return row;
+    private RoleView toRoleView(RoleDO roleDO) {
+        return new RoleView(
+                roleDO.getId(),
+                roleDO.getName(),
+                roleDO.getRoleType(),
+                roleDO.getStatus(),
+                roleDO.getOrgScopeId(),
+                getRoleMemberUserIds(roleDO.getId()).size(),
+                roleDO.getUpdateTime()
+        );
     }
 
-    private Map<String, Object> toBindingMap(UserRoleBindingDO bindingDO) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("id", bindingDO.getId());
-        row.put("userId", bindingDO.getUserId());
-        row.put("roleId", bindingDO.getRoleId());
-        row.put("status", bindingDO.getStatus());
-        row.put("createdAt", bindingDO.getCreatedAt());
-        return row;
+    private RoleResourceGrantView toGrantView(RoleResourceGrantDO grantDO) {
+        return new RoleResourceGrantView(
+                grantDO.getId(),
+                grantDO.getRoleId(),
+                grantDO.getResourceCode(),
+                grantDO.getCreateTime()
+        );
     }
 
-    private String asText(Object value) {
-        return value == null ? null : String.valueOf(value);
+    private UserRoleBindingView toBindingView(UserRoleBindingDO bindingDO) {
+        return new UserRoleBindingView(
+                bindingDO.getId(),
+                bindingDO.getUserId(),
+                bindingDO.getRoleId(),
+                bindingDO.getStatus(),
+                bindingDO.getCreateTime()
+        );
+    }
+
+    private List<String> getRoleMemberUserIds(Long roleId) {
+        return userRoleBindingMapper.selectList(new LambdaQueryWrapper<UserRoleBindingDO>()
+                        .eq(UserRoleBindingDO::getRoleId, roleId)
+                        .eq(UserRoleBindingDO::getStatus, "ACTIVE"))
+                .stream()
+                .map(UserRoleBindingDO::getUserId)
+                .distinct()
+                .toList();
     }
 
     private String defaultText(String value, String defaultValue) {
         return StringUtils.hasText(value) ? value : defaultValue;
-    }
-
-    private Integer asInt(Object value, int defaultValue) {
-        if (value == null) {
-            return defaultValue;
-        }
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        String text = String.valueOf(value);
-        if (!StringUtils.hasText(text)) {
-            return defaultValue;
-        }
-        return Integer.parseInt(text);
     }
 
     private Long nextRoleId() {

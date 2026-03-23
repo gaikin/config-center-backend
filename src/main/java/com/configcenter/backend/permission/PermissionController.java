@@ -3,12 +3,18 @@ package com.configcenter.backend.permission;
 import com.configcenter.backend.common.api.ApiResponse;
 import com.configcenter.backend.common.context.RequestContext;
 import com.configcenter.backend.common.context.RequestContextHolder;
+import com.configcenter.backend.permission.dto.PermissionResourceUpsertRequest;
+import com.configcenter.backend.permission.dto.PermissionResourceView;
+import com.configcenter.backend.permission.dto.RoleResourceGrantView;
+import com.configcenter.backend.permission.dto.RoleUpsertRequest;
+import com.configcenter.backend.permission.dto.RoleView;
+import com.configcenter.backend.permission.dto.RoleUpdateCountView;
+import com.configcenter.backend.permission.dto.SessionMeView;
+import com.configcenter.backend.permission.dto.UserRoleBindingView;
 import java.util.List;
-import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,42 +31,52 @@ public class PermissionController {
     }
 
     @GetMapping("/resources")
-    public ApiResponse<List<Map<String, Object>>> resources() {
+    public ApiResponse<List<PermissionResourceView>> resources() {
         return ApiResponse.success(permissionApplicationService.listResources());
     }
 
     @PostMapping("/resources")
-    public ApiResponse<Map<String, Object>> createResource(@RequestBody Map<String, Object> payload) {
+    public ApiResponse<PermissionResourceView> createResource(@RequestBody PermissionResourceUpsertRequest payload) {
         return ApiResponse.success(permissionApplicationService.upsertResource(null, payload));
     }
 
-    @PutMapping("/resources/{id}")
-    public ApiResponse<Map<String, Object>> updateResource(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+    @PostMapping("/resources/{id}")
+    public ApiResponse<PermissionResourceView> updateResource(@PathVariable Long id, @RequestBody PermissionResourceUpsertRequest payload) {
         return ApiResponse.success(permissionApplicationService.upsertResource(id, payload));
     }
 
     @GetMapping("/roles")
-    public ApiResponse<List<Map<String, Object>>> roles() {
+    public ApiResponse<List<RoleView>> roles() {
         return ApiResponse.success(permissionApplicationService.listRoles());
     }
 
     @PostMapping("/roles")
-    public ApiResponse<Map<String, Object>> createRole(@RequestBody Map<String, Object> payload) {
+    public ApiResponse<RoleView> createRole(@RequestBody RoleUpsertRequest payload) {
         return ApiResponse.success(permissionApplicationService.upsertRole(null, payload));
     }
 
-    @PutMapping("/roles/{id}")
-    public ApiResponse<Map<String, Object>> updateRole(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+    @PostMapping("/roles/{id}")
+    public ApiResponse<RoleView> updateRole(@PathVariable Long id, @RequestBody RoleUpsertRequest payload) {
         return ApiResponse.success(permissionApplicationService.upsertRole(id, payload));
     }
 
+    @PostMapping("/roles/{roleId}/clone")
+    public ApiResponse<RoleView> cloneRole(@PathVariable Long roleId) {
+        return ApiResponse.success(permissionApplicationService.cloneRole(roleId));
+    }
+
+    @PostMapping("/roles/{roleId}/status")
+    public ApiResponse<RoleView> toggleRoleStatus(@PathVariable Long roleId) {
+        return ApiResponse.success(permissionApplicationService.toggleRoleStatus(roleId));
+    }
+
     @GetMapping("/roles/{roleId}/resource-grants")
-    public ApiResponse<List<Map<String, Object>>> roleResourceGrants(@PathVariable Long roleId) {
+    public ApiResponse<List<RoleResourceGrantView>> roleResourceGrants(@PathVariable Long roleId) {
         return ApiResponse.success(permissionApplicationService.listRoleResourceGrants(roleId));
     }
 
-    @PutMapping("/roles/{roleId}/resource-grants")
-    public ApiResponse<Map<String, Object>> replaceRoleResourceGrants(
+    @PostMapping("/roles/{roleId}/resource-grants")
+    public ApiResponse<RoleUpdateCountView> replaceRoleResourceGrants(
             @PathVariable Long roleId,
             @RequestBody ReplaceRoleResourceGrantsRequest request
     ) {
@@ -68,12 +84,12 @@ public class PermissionController {
     }
 
     @GetMapping("/roles/{roleId}/members")
-    public ApiResponse<List<Map<String, Object>>> roleMembers(@PathVariable Long roleId) {
+    public ApiResponse<List<UserRoleBindingView>> roleMembers(@PathVariable Long roleId) {
         return ApiResponse.success(permissionApplicationService.listRoleMembers(roleId));
     }
 
-    @PutMapping("/roles/{roleId}/members")
-    public ApiResponse<Map<String, Object>> replaceRoleMembers(
+    @PostMapping("/roles/{roleId}/members")
+    public ApiResponse<RoleUpdateCountView> replaceRoleMembers(
             @PathVariable Long roleId,
             @RequestBody ReplaceRoleMembersRequest request
     ) {
@@ -81,7 +97,7 @@ public class PermissionController {
     }
 
     @GetMapping("/session/me")
-    public ApiResponse<Map<String, Object>> sessionMe(
+    public ApiResponse<SessionMeView> sessionMe(
             @RequestParam(value = "userId", required = false) String userId,
             @RequestParam(value = "orgId", required = false) String orgId
     ) {
@@ -97,3 +113,4 @@ public class PermissionController {
     public record ReplaceRoleMembersRequest(List<String> userIds) {
     }
 }
+
